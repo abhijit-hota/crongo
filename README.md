@@ -1,4 +1,4 @@
-### Crongo
+### Crongo 🕙
 
 Crongo is a simple cron job runner written in Go. It allows you to schedule jobs using a cron expression.
 
@@ -37,7 +37,8 @@ $ crongo "*/5 * * * * *" 'echo "Hello, World!"'
 
 - [ ] Multiple jobs
 - [ ] More cron expressions
-- [ ] `crontab` file support 
+- [ ] `crontab` file support
+- [ ] Add tests 
 
 ## Inspiration
 
