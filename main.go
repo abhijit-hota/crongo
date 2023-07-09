@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -123,8 +124,7 @@ func ParseCron(expr string) error {
 	return nil
 }
 
-func RunCron(expr string) error {
-
+func RunCronJob(expr string, cmd *exec.Cmd) error {
 	fmt.Println("Parsing cron")
 
 	err := ParseCron(expr)
@@ -149,7 +149,7 @@ func RunCron(expr string) error {
 			durations["day"].allowed[now.Day()] &&
 			durations["month"].allowed[now.Month()] &&
 			durations["weekday"].allowed[now.Weekday()] {
-			fmt.Println("It's time!", now.String())
+			go cmd.Run()
 		}
 	}
 
@@ -157,8 +157,16 @@ func RunCron(expr string) error {
 }
 
 func main() {
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: cron \"<cron expression>\" \"<command>\"")
+		os.Exit(1)
+	}
+
 	cronExpr := os.Args[1]
-	err := RunCron(cronExpr)
+	toRun := os.Args[2]
+	task := exec.Command("sh", "-c", toRun)
+
+	err := RunCronJob(cronExpr, task)
 
 	if err != nil {
 		panic(err)
