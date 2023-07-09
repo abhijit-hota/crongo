@@ -107,10 +107,7 @@ func makeDurations(singleCronString string, dur string) error {
 
 var durationOrder = []string{"minute", "hour", "day", "month", "weekday"}
 
-func RunCron(expr string) error {
-
-	fmt.Println("Parsing cron")
-
+func ParseCron(expr string) error {
 	stars := strings.Split(expr, " ")
 	if len(stars) != 5 {
 		return fmt.Errorf("invalid cron expression: %s", expr)
@@ -121,6 +118,18 @@ func RunCron(expr string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func RunCron(expr string) error {
+
+	fmt.Println("Parsing cron")
+
+	err := ParseCron(expr)
+	if err != nil {
+		return err
 	}
 
 	fmt.Println("Waiting to start from next minute!")
