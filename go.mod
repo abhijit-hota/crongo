@@ -1,3 +1,3 @@
-module abhijithota.me/crongo
+module github.com/abhijit-hota/crongo
 
 go 1.20

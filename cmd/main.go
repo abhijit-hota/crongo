@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	crongo "abhijithota.me/crongo"
+	crongo "github.com/abhijit-hota/crongo"
 )
 
 func main() {
