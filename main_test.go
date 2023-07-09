@@ -10,3 +10,7 @@ func BenchmarkParseCron(b *testing.B) {
 		_ = err
 	}
 }
+
+func TestParseCron(t *testing.T) {
+
+}

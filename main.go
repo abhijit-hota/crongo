@@ -40,20 +40,20 @@ var durations = map[string]duration{
 	"weekday": {reWeekday, make([]bool, 7)},
 }
 
-func makeDurations(singleCronString string, dur string) error {
-	values := strings.Split(singleCronString, ",")
+func makeDurations(elementStr string, forDuration string) error {
+	elements := strings.Split(elementStr, ",")
 
-	allowed := durations[dur].allowed
-	re := durations[dur].regex
+	allowed := durations[forDuration].allowed
+	re := durations[forDuration].regex
 	single, ranged, step := re.SubexpIndex("single"), re.SubexpIndex("range"), re.SubexpIndex("step")
 
-	for _, value := range values {
-		matches := re.FindAllStringSubmatch(value, -1)
+	for _, element := range elements {
+		matches := re.FindAllStringSubmatch(element, -1)
 		if matches == nil {
-			return fmt.Errorf("invalid minute pattern: %s", value)
+			return fmt.Errorf("invalid %s pattern: %s", forDuration, element)
 		}
 
-		if value == "*" {
+		if element == "*" {
 			for i := range allowed {
 				allowed[i] = true
 			}
@@ -63,7 +63,7 @@ func makeDurations(singleCronString string, dur string) error {
 		if matches[0][single] != "" {
 			val, err := strconv.ParseUint(matches[0][single], 10, 0)
 			if err != nil {
-				return fmt.Errorf("invalid minute value: %s", value)
+				return fmt.Errorf("invalid %s value: %s", forDuration, element)
 			}
 			allowed[uint8(val)] = true
 		}
@@ -72,16 +72,16 @@ func makeDurations(singleCronString string, dur string) error {
 			// _range+1 because the first match is the whole string
 			min, err := strconv.ParseUint(matches[0][ranged+1], 10, 0)
 			if err != nil {
-				return fmt.Errorf("invalid minute range: %s", value)
+				return fmt.Errorf("invalid %s range: %s", forDuration, element)
 			}
 
 			max, err := strconv.ParseUint(matches[0][ranged+2], 10, 0)
 			if err != nil {
-				return fmt.Errorf("invalid minute range: %s", value)
+				return fmt.Errorf("invalid %s range: %s", forDuration, element)
 			}
 
 			if min > max {
-				return fmt.Errorf("invalid minute range: %s", value)
+				return fmt.Errorf("invalid %s range: %s", forDuration, element)
 			}
 
 			for i := min; i <= max; i++ {
@@ -93,7 +93,7 @@ func makeDurations(singleCronString string, dur string) error {
 			// step+1 because the first match is the whole string
 			stepInt, err := strconv.ParseUint(matches[0][step+1], 10, 0)
 			if err != nil {
-				return fmt.Errorf("invalid minute step: %s", value)
+				return fmt.Errorf("invalid %s step: %s", forDuration, element)
 			}
 
 			for i := uint8(0); i < uint8(len(allowed)); i += uint8(stepInt) {
@@ -108,13 +108,13 @@ func makeDurations(singleCronString string, dur string) error {
 var durationOrder = []string{"minute", "hour", "day", "month", "weekday"}
 
 func ParseCron(expr string) error {
-	stars := strings.Split(expr, " ")
-	if len(stars) != 5 {
+	splitExpr := strings.Fields(expr)
+	if len(splitExpr) != 5 {
 		return fmt.Errorf("invalid cron expression: %s", expr)
 	}
 
-	for i, star := range stars {
-		err := makeDurations(star, durationOrder[i])
+	for i, elements := range splitExpr {
+		err := makeDurations(elements, durationOrder[i])
 		if err != nil {
 			return err
 		}
@@ -132,20 +132,23 @@ func RunCron(expr string) error {
 		return err
 	}
 
-	fmt.Println("Waiting to start from next minute!")
+	// Cron jobs start at the beginning of the next minute
+	fmt.Println("Waiting to start from next minute.")
+	time.Sleep(time.Until(time.Now().Truncate(time.Minute).Add(time.Minute)))
 
-	nextMinute := time.Now().Truncate(time.Minute).Add(time.Minute)
-	time.Sleep(time.Until(nextMinute))
+	ticker := time.NewTicker(time.Minute * 1)
+	defer ticker.Stop()
 
 	fmt.Println("Job started")
 
-	for range time.Tick(time.Minute * 1) {
+	// This is a hack to make the ticker start immediately
+	for ; true; <-ticker.C {
 		now := time.Now()
 		if durations["minute"].allowed[now.Minute()] &&
 			durations["hour"].allowed[now.Hour()] &&
 			durations["day"].allowed[now.Day()] &&
 			durations["month"].allowed[now.Month()] &&
-			durations["weekday"].allowed[now.Weekday()-1] {
+			durations["weekday"].allowed[now.Weekday()] {
 			fmt.Println("It's time!", now.String())
 		}
 	}
